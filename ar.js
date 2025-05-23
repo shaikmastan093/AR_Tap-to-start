@@ -446,71 +446,6 @@ function showSubtitle(currentTime) {
   subtitleContainer.innerText = line ? line.text : "";
 }
 
-// AFRAME.registerComponent("play-audio", {
-//   schema: {
-//     sound: { type: "selector" },
-//     subtitles: { type: "asset" },
-//   },
-
-//   init: function () {
-//     const entity = this.el;
-//     const sound = this.data.sound;
-//     const subtitleContainer = document.getElementById("subtitle-container");
-//     const overlay = document.getElementById("imageOverlay");
-
-  
-
-//     function addSubtitles(sub){
-//       fetch(sub)
-//       .then((res) => res.json())
-//       .then((data) => {
-//         subtitles=data;
-//       })
-//       .catch((err) => {
-//         console.error("Subtitle loading error:", err);
-//       });
-//     }
-
-//     function clearSubtitles() {
-//       subtitles = null;
-//     }
-
-//     entity.addEventListener("targetFound", (event) => {
-//       currentTargetImg = event;
-//       console.log("Target found — showing overlay");
-//       overlay.style.display = "block";
-//       addSubtitles(event.target.attributes['sub'].value);
-//       console.log("currentTargetImg",event.target.attributes['sub'].value);
-//       console.log("Target Found! Playing audio...");
-//       if (!isDialogOpen) {
-//         sound.play();
-//         testSong = sound;
-//         subtitleInterval = setInterval(() => {
-//           showSubtitle(sound.currentTime);
-//         }, 300);
-//       }
-//     });
-//      overlay.onclick = () => {
-//       console.log("Overlay clicked — hiding overlay");
-//       overlay.style.display = "none";
-//       // optionally play audio here
-//     };
-
-//     entity.addEventListener("targetLost", () => {
-//       console.log("Target lost — hiding overlay");
-//       overlay.style.display = "none";
-//       console.log("Target Lost! Stopping audio...");
-//       testSong = null;
-//       sound.pause();
-//       sound.currentTime = 0;
-//       clearSubtitles();
-//       clearInterval(subtitleInterval);
-//       subtitleContainer.innerText = "";
-//       subtitleContainer.style.display = "none";
-//     });
-//   },
-// });
-
 AFRAME.registerComponent("play-audio", {
   schema: {
     sound: { type: "selector" },
@@ -521,7 +456,20 @@ AFRAME.registerComponent("play-audio", {
     const entity = this.el;
     const sound = this.data.sound;
     const subtitleContainer = document.getElementById("subtitle-container");
-    const overlay = document.getElementById("imageOverlay");
+
+    let overlay = document.createElement("img");
+    overlay.src = './assets/gifs/hand.jpg'; // 🔁 Set your overlay image path
+    overlay.id = "play-overlay";
+    overlay.style.position = "absolute";
+    overlay.style.top = "50%";
+    overlay.style.left = "50%";
+    overlay.style.transform = "translate(-50%, -50%)";
+    overlay.style.zIndex = "9999";
+    overlay.style.cursor = "pointer";
+    overlay.style.display = "none";
+    overlay.style.width = "120px";
+    overlay.style.height = "auto"; 
+    document.body.appendChild(overlay);
 
     function addSubtitles(sub) {
       fetch(sub)
@@ -538,48 +486,40 @@ AFRAME.registerComponent("play-audio", {
       subtitles = null;
     }
 
-    function playMedia() {
-      console.log("Playing media on overlay click");
-      sound.play();
-      testSong = sound;
-      subtitleInterval = setInterval(() => {
-        showSubtitle(sound.currentTime);
-      }, 300);
-    }
+    let currentTargetImg = null;
 
     entity.addEventListener("targetFound", (event) => {
       currentTargetImg = event;
-      console.log("Target found — showing overlay only");
-      overlay.style.display = "block";
-      const subUrl = event.target.getAttribute("sub");
-      if (subUrl) {
-        addSubtitles(subUrl);
+      addSubtitles(event.target.attributes["sub"].value);
+      overlay.style.display = "block"; // 👈 Show overlay
+    });
+
+    overlay.addEventListener("click", () => {
+      overlay.style.display = "none"; // 👈 Hide overlay on tap
+      console.log("Overlay tapped! Playing audio...");
+      if (!isDialogOpen) {
+        sound.play();
+        testSong = sound;
+        subtitleInterval = setInterval(() => {
+          showSubtitle(sound.currentTime);
+        }, 300);
       }
     });
 
-    overlay.onclick = () => {
-      console.log("Overlay clicked — hiding overlay and starting playback");
-      overlay.style.display = "none";
-      if (!isDialogOpen && testSong == null) {
-        playMedia();
-      }
-    };
-
     entity.addEventListener("targetLost", () => {
-      console.log("Target lost — resetting");
-      overlay.style.display = "none";
-      if (testSong) {
-        testSong.pause();
-        testSong.currentTime = 0;
-      }
+      console.log("Target Lost! Stopping audio...");
       testSong = null;
+      sound.pause();
+      sound.currentTime = 0;
       clearSubtitles();
       clearInterval(subtitleInterval);
       subtitleContainer.innerText = "";
       subtitleContainer.style.display = "none";
+      overlay.style.display = "none"; // 👈 Hide overlay if target lost
     });
   },
 });
+
 
 
 
